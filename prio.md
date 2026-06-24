@@ -1,4 +1,4 @@
-# CriticalAlert — Project Plan
+# Prio — Project Plan
 > A local, offline-first Flutter app for unmissable critical notifications.
 
 ---
@@ -19,7 +19,7 @@
 
 ## 1. Project Vision
 
-**CriticalAlert** is an offline-first Flutter mobile application whose sole purpose is ensuring users never miss a life-critical event — medication doses, hard deadlines, or emergency reminders — even when the device is on silent or Do Not Disturb.
+**Prio** is an offline-first Flutter mobile application whose sole purpose is ensuring users never miss a life-critical event — medication doses, hard deadlines, or emergency reminders — even when the device is on silent or Do Not Disturb.
 
 **Success looks like:** A user on full DND hears a loud alarm and sees a full-screen takeover when their medication time arrives.
 
@@ -398,4 +398,4 @@ ios/
 
 ---
 
-*Generated for CriticalAlert v1.0 planning. Last updated: June 2026.*
+*Generated for Prio v1.0 planning. Last updated: June 2026.*
