@@ -9,6 +9,8 @@ extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
     registerAdapter(PriorityLevelAdapter());
     registerAdapter(ReminderAdapter());
+    registerAdapter(ReminderTypeAdapter());
+    registerAdapter(RepeatIntervalAdapter());
   }
 }
 
@@ -16,5 +18,7 @@ extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
     registerAdapter(PriorityLevelAdapter());
     registerAdapter(ReminderAdapter());
+    registerAdapter(ReminderTypeAdapter());
+    registerAdapter(RepeatIntervalAdapter());
   }
 }

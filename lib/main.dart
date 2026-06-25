@@ -11,6 +11,8 @@ void main() async {
   await Hive.initFlutter();
   Hive.registerAdapter(PriorityLevelAdapter());
   Hive.registerAdapter(ReminderAdapter());
+  Hive.registerAdapter(ReminderTypeAdapter());
+  Hive.registerAdapter(RepeatIntervalAdapter());
   await Hive.openBox<Reminder>('reminders_box');
 
   // Initialize Notifications

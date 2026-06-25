@@ -19,23 +19,41 @@ class ReminderAdapter extends TypeAdapter<Reminder> {
     return Reminder(
       id: fields[0] as String,
       title: fields[1] as String,
-      scheduledAt: fields[2] as DateTime,
-      priority: fields[3] as PriorityLevel,
+      description: fields[2] as String?,
+      type: fields[3] as ReminderType,
+      scheduledAt: fields[4] as DateTime,
+      repeat: fields[5] as RepeatInterval?,
+      priority: fields[6] as PriorityLevel,
+      isCompleted: fields[7] == null ? false : fields[7] as bool,
+      acknowledgedAt: fields[8] as DateTime?,
+      snoozeCount: fields[9] == null ? 0 : (fields[9] as num).toInt(),
     );
   }
 
   @override
   void write(BinaryWriter writer, Reminder obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
       ..write(obj.title)
       ..writeByte(2)
-      ..write(obj.scheduledAt)
+      ..write(obj.description)
       ..writeByte(3)
-      ..write(obj.priority);
+      ..write(obj.type)
+      ..writeByte(4)
+      ..write(obj.scheduledAt)
+      ..writeByte(5)
+      ..write(obj.repeat)
+      ..writeByte(6)
+      ..write(obj.priority)
+      ..writeByte(7)
+      ..write(obj.isCompleted)
+      ..writeByte(8)
+      ..write(obj.acknowledgedAt)
+      ..writeByte(9)
+      ..write(obj.snoozeCount);
   }
 
   @override
@@ -86,6 +104,108 @@ class PriorityLevelAdapter extends TypeAdapter<PriorityLevel> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is PriorityLevelAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class ReminderTypeAdapter extends TypeAdapter<ReminderType> {
+  @override
+  final typeId = 2;
+
+  @override
+  ReminderType read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return ReminderType.medication;
+      case 1:
+        return ReminderType.deadline;
+      case 2:
+        return ReminderType.bill;
+      case 3:
+        return ReminderType.custom;
+      default:
+        return ReminderType.medication;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, ReminderType obj) {
+    switch (obj) {
+      case ReminderType.medication:
+        writer.writeByte(0);
+      case ReminderType.deadline:
+        writer.writeByte(1);
+      case ReminderType.bill:
+        writer.writeByte(2);
+      case ReminderType.custom:
+        writer.writeByte(3);
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ReminderTypeAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class RepeatIntervalAdapter extends TypeAdapter<RepeatInterval> {
+  @override
+  final typeId = 3;
+
+  @override
+  RepeatInterval read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return RepeatInterval.everyFourHours;
+      case 1:
+        return RepeatInterval.everySixHours;
+      case 2:
+        return RepeatInterval.everyEightHours;
+      case 3:
+        return RepeatInterval.everyTwelveHours;
+      case 4:
+        return RepeatInterval.daily;
+      case 5:
+        return RepeatInterval.weekly;
+      case 6:
+        return RepeatInterval.monthly;
+      default:
+        return RepeatInterval.everyFourHours;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, RepeatInterval obj) {
+    switch (obj) {
+      case RepeatInterval.everyFourHours:
+        writer.writeByte(0);
+      case RepeatInterval.everySixHours:
+        writer.writeByte(1);
+      case RepeatInterval.everyEightHours:
+        writer.writeByte(2);
+      case RepeatInterval.everyTwelveHours:
+        writer.writeByte(3);
+      case RepeatInterval.daily:
+        writer.writeByte(4);
+      case RepeatInterval.weekly:
+        writer.writeByte(5);
+      case RepeatInterval.monthly:
+        writer.writeByte(6);
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RepeatIntervalAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
