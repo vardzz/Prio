@@ -29,43 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _resetSettings() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF2C2C2E),
-        title: const Text('Reset Settings?', style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'This will restore all default alarm behaviors and preferences.',
-          style: TextStyle(color: Color(0xFF8E8E93)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF8E8E93))),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _snoozeLimit = 3;
-                _hapticFeedback = true;
-                _notificationsPermission = false;
-                _criticalAlertsOverride = true;
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Settings reset to default'),
-                  backgroundColor: Color(0xFF2C2C2E),
-                ),
-              );
-            },
-            child: const Text('Reset', style: TextStyle(color: Color(0xFFFF3B30))),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -247,19 +211,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 24),
 
           // Reset Settings Button
-          Center(
-            child: TextButton(
-              onPressed: _resetSettings,
-              child: const Text(
-                'Reset All Settings',
-                style: TextStyle(
-                  color: Color(0xFFFF3B30),
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
+
           const SizedBox(height: 80), // extra padding for bottom bar
         ],
       ),

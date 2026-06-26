@@ -116,7 +116,7 @@ class HomeScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  activeTab == 0 ? 'Prio' : 'Settings',
+                  activeTab == 0 ? 'prio' : 'settings',
                   style: const TextStyle(
                     fontSize: 34,
                     fontWeight: FontWeight.w700,
@@ -233,7 +233,7 @@ class HomeScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text(
-                      activeTab == 0 ? 'prio' : 'Settings',
+                      activeTab == 0 ? 'prio' : 'settings',
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
