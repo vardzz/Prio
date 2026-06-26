@@ -134,14 +134,6 @@ class HomeScreen extends StatelessWidget {
                         letterSpacing: 0.36,
                       ),
                     ),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF2C2C2E),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
                   ],
                 ),
               ),
