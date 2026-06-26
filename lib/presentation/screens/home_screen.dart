@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../providers/reminder_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../data/models/reminder.dart';
@@ -117,12 +118,12 @@ class HomeScreen extends ConsumerWidget {
               children: [
                 Text(
                   activeTab == 0 ? 'prio' : 'settings',
-                  style: const TextStyle(
-                    fontFamily: 'Anton',
-                    fontSize: 34,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.37,
+                  style: GoogleFonts.anton(
+                    textStyle: const TextStyle(
+                      fontSize: 34,
+                      color: Colors.white,
+                      letterSpacing: 0.37,
+                    ),
                   ),
                 ),
                 Row(
@@ -235,12 +236,12 @@ class HomeScreen extends ConsumerWidget {
                   children: [
                     Text(
                       activeTab == 0 ? 'prio' : 'settings',
-                      style: const TextStyle(
-                        fontFamily: 'Anton',
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.36,
+                      style: GoogleFonts.anton(
+                        textStyle: const TextStyle(
+                          fontSize: 28,
+                          color: Colors.white,
+                          letterSpacing: 0.36,
+                        ),
                       ),
                     ),
                   ],
