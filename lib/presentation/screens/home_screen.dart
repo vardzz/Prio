@@ -230,14 +230,8 @@ class HomeScreen extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    if (activeTab == 1) ...[
-                      IconButton(
-                        icon: const Icon(Icons.menu, color: Colors.white),
-                        onPressed: () {},
-                      ),
-                    ],
                     Text(
                       activeTab == 0 ? 'Prio' : 'Settings',
                       style: const TextStyle(
@@ -247,14 +241,6 @@ class HomeScreen extends ConsumerWidget {
                         letterSpacing: 0.36,
                       ),
                     ),
-                    if (activeTab == 1) ...[
-                      IconButton(
-                        icon: const Icon(Icons.add, color: Colors.white),
-                        onPressed: () => _openAddReminder(context, ref),
-                      ),
-                    ] else ...[
-                      const SizedBox(width: 48), // Spacer to balance layout header
-                    ],
                   ],
                 ),
               ),
