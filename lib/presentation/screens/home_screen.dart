@@ -178,8 +178,6 @@ class HomeScreen extends ConsumerWidget {
                                 const SizedBox(height: 24),
                                 _buildUpcomingSection(ref, upcoming),
                                 const SizedBox(height: 24),
-                                _buildLaterSection(),
-                                const SizedBox(height: 24),
                                 _buildCompletedSection(context, ref, completed),
                                 const SizedBox(height: 40),
                               ],
@@ -297,8 +295,7 @@ class HomeScreen extends ConsumerWidget {
                             _buildTodaySection(ref, today),
                             const SizedBox(height: 24),
                             _buildUpcomingSection(ref, upcoming),
-                            const SizedBox(height: 24),
-                            _buildLaterSection(),
+
                             const SizedBox(height: 24),
                             _buildCompletedSection(context, ref, completed),
                           ],
@@ -527,20 +524,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLaterSection() {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SectionHeader(
-          title: 'Later',
-          trailing: Icon(
-            Icons.expand_more,
-            color: Color(0xFF8E8E93),
-          ),
-        ),
-      ],
-    );
-  }
+
 
   void _handleCompletedTap(BuildContext context, WidgetRef ref, Reminder r) {
     showCupertinoModalPopup(
