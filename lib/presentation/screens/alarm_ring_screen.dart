@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/reminder.dart';
+import '../../providers/settings_provider.dart';
 import '../../providers/active_alarm_provider.dart';
 import '../../providers/reminder_provider.dart';
 
@@ -85,123 +86,102 @@ class _AlarmRingScreenState extends ConsumerState<AlarmRingScreen> with SingleTi
   Widget build(BuildContext context) {
     final isMedication = widget.reminder.type == ReminderType.medication;
     final typeLabel = widget.reminder.type.name[0].toUpperCase() + widget.reminder.type.name.substring(1);
+    final settings = ref.watch(settingsProvider);
+    final isSnoozeLimitReached = widget.reminder.snoozeCount >= settings.snoozeLimit;
 
     return Scaffold(
       backgroundColor: const Color(0xFF1C1C1E), // ios-bg
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const SizedBox(height: 20),
+              // Top Space placeholder
+              const SizedBox(height: 10),
 
-              // Animated Pulsing Alarm Bell Centerpiece
-              Expanded(
-                child: Center(
-                  child: Stack(
+              // Centered Pulse and Title
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Outer Pulse Ring
+                      // Radial Glowing Waves (Pulse Animation)
                       AnimatedBuilder(
                         animation: _pulseAnimation,
                         builder: (context, child) {
                           return Container(
-                            width: 240 * _pulseAnimation.value,
-                            height: 240 * _pulseAnimation.value,
+                            width: 200 * _pulseAnimation.value,
+                            height: 200 * _pulseAnimation.value,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: const Color(0xFFFF3B30).withValues(alpha: 0.05), // pulsing red glow
-                              border: Border.all(
-                                color: const Color(0xFFFF3B30).withValues(alpha: 0.1),
-                                width: 1.5,
-                              ),
+                              color: const Color(0xFFFF3B30).withValues(alpha: 0.1),
                             ),
                           );
                         },
                       ),
-                      // Mid Pulse Ring
                       AnimatedBuilder(
                         animation: _pulseAnimation,
                         builder: (context, child) {
                           return Container(
-                            width: 180 * (2 - _pulseAnimation.value),
-                            height: 180 * (2 - _pulseAnimation.value),
+                            width: 150 * _pulseAnimation.value,
+                            height: 150 * _pulseAnimation.value,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: const Color(0xFFFF3B30).withValues(alpha: 0.08),
-                              border: Border.all(
-                                color: const Color(0xFFFF3B30).withValues(alpha: 0.15),
-                                width: 1.5,
-                              ),
+                              color: const Color(0xFFFF3B30).withValues(alpha: 0.05),
                             ),
                           );
                         },
                       ),
-                      // Inner Solid Ring
+                      // Core Bell Icon Container
                       Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
+                        width: 90,
+                        height: 90,
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFFFF3B30).withValues(alpha: 0.15),
-                          border: Border.all(
-                            color: const Color(0xFFFF3B30).withValues(alpha: 0.3),
-                            width: 2,
-                          ),
+                          color: Color(0xFF2C2C2E), // bg-surface
                         ),
                         child: const Center(
                           child: Icon(
                             Icons.notifications_active,
-                            color: Colors.white,
-                            size: 48,
+                            color: Color(0xFFFF3B30),
+                            size: 40,
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-              ),
+                  const SizedBox(height: 32),
 
-              // Title and Subtitle Details
-              Column(
-                children: [
+                  // Reminder Title
                   Text(
                     widget.reminder.title,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
                       color: Colors.white,
-                      letterSpacing: 0.38,
+                      height: 1.25,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _getTypePrefixEmoji(widget.reminder.type),
-                        style: const TextStyle(fontSize: 15),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '$typeLabel · ${_formatTime(widget.reminder.scheduledAt)}',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF8E8E93), // ios-muted
-                        ),
-                      ),
-                    ],
+
+                  // Subtitle info
+                  Text(
+                    '${_getTypePrefixEmoji(widget.reminder.type)} $typeLabel · ${_formatTime(widget.reminder.scheduledAt)}',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF8E8E93),
+                    ),
                   ),
                 ],
               ),
 
-              const SizedBox(height: 48),
-
-              // Action Buttons
+              // Bottom buttons
               Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   // Done Button
                   SizedBox(
@@ -209,7 +189,7 @@ class _AlarmRingScreenState extends ConsumerState<AlarmRingScreen> with SingleTi
                     height: 56,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF24CF5F), // iOS green
+                        backgroundColor: const Color(0xFF30D158), // Green
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -241,38 +221,44 @@ class _AlarmRingScreenState extends ConsumerState<AlarmRingScreen> with SingleTi
                     height: 56,
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFFFF9F0A), width: 1.5), // orange border
+                        side: BorderSide(
+                          color: isSnoozeLimitReached ? const Color(0xFF3A3A3C) : const Color(0xFFFF9F0A),
+                          width: 1.5,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         backgroundColor: Colors.transparent,
                       ),
-                      onPressed: _onSnooze,
-                      child: const Row(
+                      onPressed: isSnoozeLimitReached ? null : _onSnooze,
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.alarm, color: Color(0xFFFF9F0A), size: 20),
-                          SizedBox(width: 8),
+                          Icon(
+                            Icons.alarm,
+                            color: isSnoozeLimitReached ? const Color(0xFF8E8E93) : const Color(0xFFFF9F0A),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
                           Text(
-                            'Snooze 10 min',
+                            isSnoozeLimitReached ? 'Snooze Limit Reached' : 'Snooze 10 min',
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFFFF9F0A), // orange text
+                              color: isSnoozeLimitReached ? const Color(0xFF8E8E93) : const Color(0xFFFF9F0A),
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 16),
 
                   // Snooze tracker details
                   Text(
                     widget.reminder.snoozeCount == 0 
                         ? 'Not snoozed yet' 
-                        : 'Snoozed ${widget.reminder.snoozeCount} of 3 times',
+                        : 'Snoozed ${widget.reminder.snoozeCount} of ${settings.snoozeLimit} times',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w400,

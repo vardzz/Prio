@@ -15,6 +15,7 @@ void main() async {
   Hive.registerAdapter(ReminderTypeAdapter());
   Hive.registerAdapter(RepeatIntervalAdapter());
   await Hive.openBox<Reminder>('reminders_box');
+  await Hive.openBox('settings_box');
 
   // Initialize Notifications
   await NotificationService.init();

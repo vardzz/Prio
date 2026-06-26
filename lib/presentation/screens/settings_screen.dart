@@ -1,36 +1,96 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/settings_provider.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  int _snoozeLimit = 3;
-  bool _hapticFeedback = true;
-  bool _notificationsPermission = false; // Mocked permission state
-  bool _criticalAlertsOverride = true;
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  void _selectAlarmSound(BuildContext context, String currentSound) {
+    final sounds = [
+      'Radar',
+      'Chimes',
+      'Apex',
+      'Beacon',
+      'Signal',
+      'Cosmic',
+      'Constellation',
+      'Presto',
+      'Ripples',
+      'Sencha',
+    ];
 
-  void _incrementSnooze() {
-    if (_snoozeLimit < 10) {
-      setState(() {
-        _snoozeLimit++;
-      });
-    }
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) => CupertinoTheme(
+        data: const CupertinoThemeData(brightness: Brightness.dark),
+        child: CupertinoActionSheet(
+          title: const Text('Default Alarm Sound', style: TextStyle(fontWeight: FontWeight.bold)),
+          message: const Text('Select a system alarm sound embedded in your device'),
+          actions: sounds.map((sound) {
+            return CupertinoActionSheetAction(
+              onPressed: () {
+                ref.read(settingsProvider.notifier).updateDefaultSound(sound);
+                Navigator.pop(context);
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(sound, style: const TextStyle(color: Colors.white)),
+                  if (currentSound == sound) ...[
+                    const SizedBox(width: 8),
+                    const Icon(Icons.check, color: Color(0xFFFFD60A), size: 18),
+                  ],
+                ],
+              ),
+            );
+          }).toList(),
+          cancelButton: CupertinoActionSheetAction(
+            isDefaultAction: true,
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFFFFD60A))),
+          ),
+        ),
+      ),
+    );
   }
 
-  void _decrementSnooze() {
-    if (_snoozeLimit > 1) {
-      setState(() {
-        _snoozeLimit--;
-      });
-    }
+  void _showWhatIsPrio(BuildContext context) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoTheme(
+        data: const CupertinoThemeData(brightness: Brightness.dark),
+        child: CupertinoAlertDialog(
+          title: const Text('What is Prio?', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: const Padding(
+            padding: EdgeInsets.only(top: 8.0),
+            child: Text(
+              'Prio is a local, offline-first application designed for unmissable notifications. It bridges the gap between passive reminders and critical tasks by using persistent sound cascades, haptics, and custom overlays to ensure you never miss what matters.',
+              textAlign: TextAlign.left,
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('Close', style: TextStyle(color: Color(0xFFFFD60A))),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final settings = ref.watch(settingsProvider);
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 12.0, bottom: 100.0), // Padding to clear floating navbar
@@ -44,11 +104,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSettingRow(
               title: 'Notifications',
               trailing: Switch(
-                value: _notificationsPermission,
+                value: settings.notificationsPermission,
                 onChanged: (val) {
-                  setState(() {
-                    _notificationsPermission = val;
-                  });
+                  ref.read(settingsProvider.notifier).updateNotificationsPermission(val);
                 },
                 activeThumbColor: const Color(0xFF30D158), // ios green
                 activeTrackColor: const Color(0xFF30D158).withValues(alpha: 0.3),
@@ -61,11 +119,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSettingRow(
               title: 'Critical Alerts Override',
               trailing: Switch(
-                value: _criticalAlertsOverride,
+                value: settings.criticalAlertsOverride,
                 onChanged: (val) {
-                  setState(() {
-                    _criticalAlertsOverride = val;
-                  });
+                  ref.read(settingsProvider.notifier).updateCriticalAlertsOverride(val);
                 },
                 activeThumbColor: const Color(0xFF30D158),
                 activeTrackColor: const Color(0xFF30D158).withValues(alpha: 0.3),
@@ -81,7 +137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text(
               'Prio requires notification permissions to ensure you never miss a critical reminder. Overriding Do Not Disturb ensures alarms sound when necessary.',
               style: TextStyle(
-                color: Color(0x99EBEBF5), // text-secondary (60%)
+                color: Color(0x99EBEBF5), // text-secondary (60% opacity)
                 fontSize: 12,
                 height: 1.4,
               ),
@@ -95,16 +151,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Default Alarm Sound
             _buildSettingRow(
               title: 'Default alarm sound',
-              trailing: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Radar',
-                    style: TextStyle(color: Color(0x99EBEBF5), fontSize: 15),
-                  ),
-                  SizedBox(width: 4),
-                  Icon(Icons.chevron_right, color: Color(0x4DEBEBF5), size: 20),
-                ],
+              trailing: GestureDetector(
+                onTap: () => _selectAlarmSound(context, settings.defaultSound),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      settings.defaultSound,
+                      style: const TextStyle(color: Color(0x99EBEBF5), fontSize: 15),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.chevron_right, color: Color(0x4DEBEBF5), size: 20),
+                  ],
+                ),
               ),
               showDivider: true,
             ),
@@ -115,7 +174,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    '$_snoozeLimit times',
+                    '${settings.snoozeLimit} times',
                     style: const TextStyle(color: Color(0x99EBEBF5), fontSize: 15),
                   ),
                   const SizedBox(width: 12),
@@ -128,7 +187,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Row(
                       children: [
                         GestureDetector(
-                          onTap: _decrementSnooze,
+                          onTap: () {
+                            if (settings.snoozeLimit > 1) {
+                              ref.read(settingsProvider.notifier).updateSnoozeLimit(settings.snoozeLimit - 1);
+                            }
+                          },
                           child: const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                             child: Icon(Icons.remove, color: Colors.white, size: 16),
@@ -140,7 +203,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           color: const Color(0x1AFFFFFF),
                         ),
                         GestureDetector(
-                          onTap: _incrementSnooze,
+                          onTap: () {
+                            if (settings.snoozeLimit < 10) {
+                              ref.read(settingsProvider.notifier).updateSnoozeLimit(settings.snoozeLimit + 1);
+                            }
+                          },
                           child: const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                             child: Icon(Icons.add, color: Colors.white, size: 16),
@@ -157,11 +224,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSettingRow(
               title: 'Haptic Feedback',
               trailing: Switch(
-                value: _hapticFeedback,
+                value: settings.hapticFeedback,
                 onChanged: (val) {
-                  setState(() {
-                    _hapticFeedback = val;
-                  });
+                  ref.read(settingsProvider.notifier).updateHapticFeedback(val);
                 },
                 activeThumbColor: const Color(0xFF30D158),
                 activeTrackColor: const Color(0xFF30D158).withValues(alpha: 0.3),
@@ -179,7 +244,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // What is Prio?
             _buildSettingRow(
               title: 'What is Prio?',
-              trailing: const Icon(Icons.chevron_right, color: Color(0x4DEBEBF5), size: 20),
+              trailing: GestureDetector(
+                onTap: () => _showWhatIsPrio(context),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.chevron_right, color: Color(0x4DEBEBF5), size: 20),
+                  ],
+                ),
+              ),
               showDivider: true,
             ),
             // App Version
