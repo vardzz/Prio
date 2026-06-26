@@ -169,22 +169,24 @@ class HomeScreen extends ConsumerWidget {
                   Expanded(
                     flex: 2,
                     child: activeTab == 0
-                        ? SingleChildScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildCriticalSection(ref, critical),
-                                const SizedBox(height: 24),
-                                _buildTodaySection(ref, today),
-                                const SizedBox(height: 24),
-                                _buildUpcomingSection(ref, upcoming),
-                                const SizedBox(height: 24),
-                                _buildCompletedSection(context, ref, completed),
-                                const SizedBox(height: 40),
-                              ],
-                            ),
-                          )
+                        ? (critical.isEmpty && today.isEmpty && upcoming.isEmpty && completed.isEmpty)
+                            ? _buildEmptyState(context, ref)
+                            : SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildCriticalSection(ref, critical),
+                                    const SizedBox(height: 24),
+                                    _buildTodaySection(ref, today),
+                                    const SizedBox(height: 24),
+                                    _buildUpcomingSection(ref, upcoming),
+                                    const SizedBox(height: 24),
+                                    _buildCompletedSection(context, ref, completed),
+                                    const SizedBox(height: 40),
+                                  ],
+                                ),
+                              )
                         : const SettingsScreen(),
                   ),
                   const SizedBox(width: 32),
@@ -286,23 +288,24 @@ class HomeScreen extends ConsumerWidget {
               // Scrollable content
               Expanded(
                 child: activeTab == 0
-                    ? SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.only(bottom: 100.0), // Safe area for floating bottom nav/FAB
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 16),
-                            _buildCriticalSection(ref, critical),
-                            const SizedBox(height: 24),
-                            _buildTodaySection(ref, today),
-                            const SizedBox(height: 24),
-                            _buildUpcomingSection(ref, upcoming),
-
-                            const SizedBox(height: 24),
-                            _buildCompletedSection(context, ref, completed),
-                          ],
-                        ),
-                      )
+                    ? (critical.isEmpty && today.isEmpty && upcoming.isEmpty && completed.isEmpty)
+                        ? _buildEmptyState(context, ref)
+                        : SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.only(bottom: 100.0), // Safe area for floating bottom nav/FAB
+                            child: Column(
+                              children: [
+                                const SizedBox(height: 16),
+                                _buildCriticalSection(ref, critical),
+                                const SizedBox(height: 24),
+                                _buildTodaySection(ref, today),
+                                const SizedBox(height: 24),
+                                _buildUpcomingSection(ref, upcoming),
+                                const SizedBox(height: 24),
+                                _buildCompletedSection(context, ref, completed),
+                              ],
+                            ),
+                          )
                     : const SettingsScreen(),
               ),
             ],
@@ -415,6 +418,44 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 32.0, vertical: 80.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.notifications_none_outlined,
+              size: 48,
+              color: Color(0x4DEBEBF5), // text-tertiary (30% opacity)
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No Reminders Yet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Color(0x99EBEBF5), // text-secondary (60% opacity)
+              ),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Create a reminder to help you remember your tasks.\nTap the yellow add button below to get started.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0x4DEBEBF5), // text-tertiary (30% opacity)
+                height: 1.4,
+              ),
+            ),
+          ],
         ),
       ),
     );
