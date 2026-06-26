@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'services/notification_service.dart';
+import 'presentation/screens/home_screen.dart';
 
 class PrioApp extends StatelessWidget {
   const PrioApp({super.key});
@@ -9,9 +10,9 @@ class PrioApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0A0A0A),
+        scaffoldBackgroundColor: const Color(0xFF1C1C1E), // ios-bg
       ),
-      home: const PhaseZeroScreen(),
+      home: const HomeScreen(),
     );
   }
 }
