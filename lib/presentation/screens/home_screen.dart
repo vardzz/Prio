@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/reminder_provider.dart';
@@ -179,7 +180,7 @@ class HomeScreen extends ConsumerWidget {
                                 const SizedBox(height: 24),
                                 _buildLaterSection(),
                                 const SizedBox(height: 24),
-                                _buildCompletedSection(ref, completed),
+                                _buildCompletedSection(context, ref, completed),
                                 const SizedBox(height: 40),
                               ],
                             ),
@@ -299,7 +300,7 @@ class HomeScreen extends ConsumerWidget {
                             const SizedBox(height: 24),
                             _buildLaterSection(),
                             const SizedBox(height: 24),
-                            _buildCompletedSection(ref, completed),
+                            _buildCompletedSection(context, ref, completed),
                           ],
                         ),
                       )
@@ -541,7 +542,49 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCompletedSection(WidgetRef ref, List<Reminder> items) {
+  void _handleCompletedTap(BuildContext context, WidgetRef ref, Reminder r) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) => CupertinoTheme(
+        data: const CupertinoThemeData(brightness: Brightness.dark),
+        child: CupertinoActionSheet(
+          title: const Text(
+            'Completed Reminder',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          message: Text('What would you like to do with "${r.title}"?'),
+          actions: <CupertinoActionSheetAction>[
+            CupertinoActionSheetAction(
+              isDestructiveAction: true,
+              onPressed: () {
+                ref.read(reminderListProvider.notifier).deleteReminder(r.id);
+                Navigator.pop(context);
+              },
+              child: const Text('Delete Permanently'),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                ref.read(reminderListProvider.notifier).updateReminder(
+                      r.copyWith(isCompleted: false),
+                    );
+                Navigator.pop(context);
+              },
+              child: const Text('Restore to Active'),
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            isDefaultAction: true,
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Cancel'),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompletedSection(BuildContext context, WidgetRef ref, List<Reminder> items) {
     if (items.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,11 +599,7 @@ class HomeScreen extends ConsumerWidget {
                 title: r.title,
                 isCompleted: true,
                 showBottomDivider: idx < items.length - 1,
-                onTap: () {
-                  ref.read(reminderListProvider.notifier).updateReminder(
-                        r.copyWith(isCompleted: !r.isCompleted),
-                      );
-                },
+                onTap: () => _handleCompletedTap(context, ref, r),
               );
             }),
           ),
