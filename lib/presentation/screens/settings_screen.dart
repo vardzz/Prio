@@ -29,13 +29,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 12.0, bottom: 100.0), // Padding to clear floating navbar
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -44,8 +42,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildCard([
             // Notifications status
             _buildSettingRow(
-              icon: _notificationsPermission ? Icons.notifications_active_outlined : Icons.notifications_off_outlined,
-              iconColor: _notificationsPermission ? const Color(0xFF4CD964) : const Color(0xFFFF3B30),
               title: 'Notifications',
               trailing: Switch(
                 value: _notificationsPermission,
@@ -54,8 +50,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _notificationsPermission = val;
                   });
                 },
-                activeThumbColor: const Color(0xFF4CD964),
-                activeTrackColor: const Color(0xFF4CD964).withValues(alpha: 0.3),
+                activeThumbColor: const Color(0xFF30D158), // ios green
+                activeTrackColor: const Color(0xFF30D158).withValues(alpha: 0.3),
                 inactiveThumbColor: Colors.white,
                 inactiveTrackColor: const Color(0xFF48484A),
               ),
@@ -63,8 +59,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             // Critical Alerts Override
             _buildSettingRow(
-              icon: _criticalAlertsOverride ? Icons.notifications_active_outlined : Icons.notifications_off_outlined,
-              iconColor: _criticalAlertsOverride ? const Color(0xFF4CD964) : const Color(0xFF8E8E93),
               title: 'Critical Alerts Override',
               trailing: Switch(
                 value: _criticalAlertsOverride,
@@ -73,8 +67,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _criticalAlertsOverride = val;
                   });
                 },
-                activeThumbColor: const Color(0xFF4CD964),
-                activeTrackColor: const Color(0xFF4CD964).withValues(alpha: 0.3),
+                activeThumbColor: const Color(0xFF30D158),
+                activeTrackColor: const Color(0xFF30D158).withValues(alpha: 0.3),
                 inactiveThumbColor: Colors.white,
                 inactiveTrackColor: const Color(0xFF48484A),
               ),
@@ -87,7 +81,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text(
               'Prio requires notification permissions to ensure you never miss a critical reminder. Overriding Do Not Disturb ensures alarms sound when necessary.',
               style: TextStyle(
-                color: Color(0xFF8E8E93),
+                color: Color(0x99EBEBF5), // text-secondary (60%)
                 fontSize: 12,
                 height: 1.4,
               ),
@@ -100,33 +94,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildCard([
             // Default Alarm Sound
             _buildSettingRow(
-              icon: Icons.music_note,
-              iconColor: const Color(0xFFFF9F0A), // ios-orange
               title: 'Default alarm sound',
               trailing: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'Radar',
-                    style: TextStyle(color: Color(0xFF8E8E93), fontSize: 15),
+                    style: TextStyle(color: Color(0x99EBEBF5), fontSize: 15),
                   ),
                   SizedBox(width: 4),
-                  Icon(Icons.chevron_right, color: Color(0xFF8E8E93), size: 20),
+                  Icon(Icons.chevron_right, color: Color(0x4DEBEBF5), size: 20),
                 ],
               ),
               showDivider: true,
             ),
             // Snooze Limit Counter
             _buildSettingRow(
-              icon: Icons.alarm,
-              iconColor: const Color(0xFF007AFF),
               title: 'Snooze limit',
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     '$_snoozeLimit times',
-                    style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 15),
+                    style: const TextStyle(color: Color(0x99EBEBF5), fontSize: 15),
                   ),
                   const SizedBox(width: 12),
                   Container(
@@ -165,8 +155,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             // Haptic Feedback Switch
             _buildSettingRow(
-              icon: Icons.vibration,
-              iconColor: const Color(0xFF5856D6), // iOS purple
               title: 'Haptic Feedback',
               trailing: Switch(
                 value: _hapticFeedback,
@@ -175,8 +163,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _hapticFeedback = val;
                   });
                 },
-                activeThumbColor: const Color(0xFF4CD964),
-                activeTrackColor: const Color(0xFF4CD964).withValues(alpha: 0.3),
+                activeThumbColor: const Color(0xFF30D158),
+                activeTrackColor: const Color(0xFF30D158).withValues(alpha: 0.3),
                 inactiveThumbColor: Colors.white,
                 inactiveTrackColor: const Color(0xFF48484A),
               ),
@@ -190,29 +178,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildCard([
             // What is Prio?
             _buildSettingRow(
-              icon: Icons.info_outline,
-              iconColor: const Color(0xFF8E8E93),
               title: 'What is Prio?',
-              trailing: const Icon(Icons.chevron_right, color: Color(0xFF8E8E93), size: 20),
+              trailing: const Icon(Icons.chevron_right, color: Color(0x4DEBEBF5), size: 20),
               showDivider: true,
             ),
             // App Version
             _buildSettingRow(
-              icon: Icons.device_hub_outlined,
-              iconColor: const Color(0xFF8E8E93),
               title: 'App Version',
               trailing: const Text(
                 '2.1.4 (842)',
-                style: TextStyle(color: Color(0xFF8E8E93), fontSize: 15),
+                style: TextStyle(color: Color(0x99EBEBF5), fontSize: 15),
               ),
               showDivider: false,
             ),
           ]),
           const SizedBox(height: 24),
-
-          // Reset Settings Button
-
-          const SizedBox(height: 80), // extra padding for bottom bar
         ],
       ),
     );
@@ -222,11 +202,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Padding(
       padding: const EdgeInsets.only(left: 16.0, bottom: 8.0, top: 8.0),
       child: Text(
-        title.toUpperCase(),
+        title,
         style: const TextStyle(
           fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: Color(0xFF8E8E93),
+          fontWeight: FontWeight.w600,
+          color: Color(0x99EBEBF5), // text-secondary (60%)
           letterSpacing: 0.06,
         ),
       ),
@@ -236,7 +216,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildCard(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF2C2C2E), // ios-card
+        color: const Color(0xFF2C2C2E), // bg-surface (iOS grey)
         borderRadius: BorderRadius.circular(12),
       ),
       clipBehavior: Clip.antiAlias,
@@ -247,8 +227,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSettingRow({
-    required IconData icon,
-    required Color iconColor,
     required String title,
     required Widget trailing,
     bool showDivider = true,
@@ -264,15 +242,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: 12),
           Text(
             title,
             style: const TextStyle(

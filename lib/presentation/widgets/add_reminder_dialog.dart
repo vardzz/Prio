@@ -23,10 +23,7 @@ class _AddReminderDialogState extends State<AddReminderDialog> {
   void initState() {
     super.initState();
     _selectedType = widget.initialType ?? ReminderType.medication;
-    // Default Medication type auto-sets to CRITICAL priority
-    if (_selectedType == ReminderType.medication) {
-      _selectedPriority = PriorityLevel.critical;
-    }
+    _applyTypeDefaults(_selectedType);
   }
 
   @override
@@ -36,12 +33,21 @@ class _AddReminderDialogState extends State<AddReminderDialog> {
     super.dispose();
   }
 
+  void _applyTypeDefaults(ReminderType type) {
+    if (type == ReminderType.medication) {
+      _selectedPriority = PriorityLevel.critical;
+    } else if (type == ReminderType.deadline) {
+      _selectedPriority = PriorityLevel.high;
+    } else if (type == ReminderType.bill) {
+      _selectedPriority = PriorityLevel.high;
+      _selectedRepeat = RepeatInterval.monthly;
+    }
+  }
+
   void _onTypeChanged(ReminderType type) {
     setState(() {
       _selectedType = type;
-      if (type == ReminderType.medication) {
-        _selectedPriority = PriorityLevel.critical;
-      }
+      _applyTypeDefaults(type);
     });
   }
 
@@ -216,82 +222,86 @@ class _AddReminderDialogState extends State<AddReminderDialog> {
     Navigator.pop(context, newReminder);
   }
 
+  Color _getPriorityColor() {
+    switch (_selectedPriority) {
+      case PriorityLevel.critical:
+        return const Color(0xFFFF3B30); // Critical red
+      case PriorityLevel.high:
+        return const Color(0xFFFF9F0A); // High orange
+      case PriorityLevel.normal:
+        return const Color(0xFF636366); // Normal grey
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final primaryColor = _getPriorityColor();
 
-    return Dialog(
-      backgroundColor: const Color(0xFF1C1C1E), // ios-bg
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF2C2C2E), // bg-surface (iOS grey)
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
-      child: SingleChildScrollView(
-        padding: EdgeInsets.only(bottom: bottomInset),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
+      padding: EdgeInsets.only(bottom: bottomInset + 20),
+      child: SafeArea(
+        child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Dialog header / Close button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'What do you need to do?',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Color(0xFF8E8E93)),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // Title input text field
-              TextField(
-                controller: _titleController,
-                style: const TextStyle(color: Colors.white, fontSize: 17),
-                decoration: const InputDecoration(
-                  hintText: 'e.g. Take heart meds, Finalize report',
-                  hintStyle: TextStyle(color: Color(0xFF8E8E93)),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0x1AFFFFFF)),
-                  ),
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFFF3B30)),
+              // Grab handle
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF636366),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
 
-              // Reminder Type Pills Row
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildTypePill(ReminderType.medication, Icons.medical_services_outlined, 'Medication'),
-                    const SizedBox(width: 8),
-                    _buildTypePill(ReminderType.deadline, Icons.push_pin_outlined, 'Deadline'),
-                    const SizedBox(width: 8),
-                    _buildTypePill(ReminderType.bill, Icons.credit_card, 'Bill'),
-                    const SizedBox(width: 8),
-                    _buildTypePill(ReminderType.custom, Icons.more_horiz, 'Custom'),
-                  ],
+              // Title input text field (autofocuses on open)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: TextField(
+                  controller: _titleController,
+                  autofocus: true,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: 'What needs to happen?',
+                    hintStyle: TextStyle(color: Color(0x4DEBEBF5)), // text-tertiary (30%)
+                    border: InputBorder.none,
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
 
-              // Medication auto-set warning notice
+              // Preset Type Chips
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  children: [
+                    _buildTypeChip(ReminderType.medication, Icons.medical_services_outlined, 'Medication'),
+                    _buildTypeChip(ReminderType.deadline, Icons.push_pin_outlined, 'Deadline'),
+                    _buildTypeChip(ReminderType.bill, Icons.credit_card, 'Bill'),
+                    _buildTypeChip(ReminderType.custom, Icons.more_horiz, 'Custom'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Auto-set notice label
               if (_selectedType == ReminderType.medication)
                 const Padding(
-                  padding: EdgeInsets.only(bottom: 12.0),
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
                   child: Row(
                     children: [
                       Icon(Icons.circle, size: 8, color: Color(0xFFFF3B30)),
@@ -301,94 +311,94 @@ class _AddReminderDialogState extends State<AddReminderDialog> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFFFF3B30), // ios-red
+                          color: Color(0xFFFF3B30),
                         ),
                       ),
                     ],
                   ),
                 ),
 
-              // Settings Container (Card style)
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2C2C2E), // ios-card
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    // Date & Time Select Tile
-                    _buildInteractiveSettingTile(
-                      icon: Icons.calendar_month,
-                      iconColor: const Color(0xFFFF9F0A),
-                      label: 'Date & Time',
-                      value: _formatDateTime(_selectedDateTime),
-                      onTap: _selectDateTime,
-                      showDivider: true,
-                    ),
-
-                    // Repeat Select Tile
-                    _buildInteractiveSettingTile(
-                      icon: Icons.access_time,
-                      iconColor: const Color(0xFF8E8E93),
-                      label: 'Repeat',
-                      value: _formatDateTime(_selectedDateTime) != _getRepeatLabel(_selectedRepeat)
-                          ? _getRepeatLabel(_selectedRepeat)
-                          : '',
-                      onTap: _selectRepeat,
-                      showDivider: true,
-                    ),
-
-                    // Priority Tile
-                    _buildPrioritySettingTile(),
-
-                    // Notes Text Field
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.notes, color: Color(0xFF8E8E93), size: 20),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextField(
-                              controller: _notesController,
-                              style: const TextStyle(color: Colors.white, fontSize: 15),
-                              maxLines: 2,
-                              decoration: const InputDecoration(
-                                hintText: 'Add notes (e.g., take with food)',
-                                hintStyle: TextStyle(color: Color(0xFF8E8E93)),
-                                border: InputBorder.none,
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
+              // Grouped Form List Rows
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1C1C1E), // bg-primary
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    children: [
+                      _buildInteractiveSettingTile(
+                        icon: Icons.calendar_month,
+                        iconColor: const Color(0xFFFF9F0A),
+                        label: 'Date & Time',
+                        value: _formatDateTime(_selectedDateTime),
+                        onTap: _selectDateTime,
+                        showDivider: true,
+                      ),
+                      _buildInteractiveSettingTile(
+                        icon: Icons.access_time,
+                        iconColor: const Color(0xFF8E8E93),
+                        label: 'Repeat',
+                        value: _getRepeatLabel(_selectedRepeat),
+                        onTap: _selectRepeat,
+                        showDivider: true,
+                      ),
+                      _buildPrioritySettingTile(),
+                      // Notes row
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.notes, color: Color(0xFF8E8E93), size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextField(
+                                controller: _notesController,
+                                style: const TextStyle(color: Colors.white, fontSize: 15),
+                                maxLines: 2,
+                                decoration: const InputDecoration(
+                                  hintText: 'Add notes (optional)',
+                                  hintStyle: TextStyle(color: Color(0x4DEBEBF5)),
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
 
               // Submit Button
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF3B30), // ios-red
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
                     ),
-                  ),
-                  onPressed: _submit,
-                  child: const Text(
-                    'Schedule Reminder',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                    onPressed: _submit,
+                    child: const Text(
+                      'Schedule Reminder',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -400,38 +410,44 @@ class _AddReminderDialogState extends State<AddReminderDialog> {
     );
   }
 
-  Widget _buildTypePill(ReminderType type, IconData icon, String label) {
+  Widget _buildTypeChip(ReminderType type, IconData icon, String label) {
     final isSelected = _selectedType == type;
-    return InkWell(
-      onTap: () => _onTypeChanged(type),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0x33FF3B30) : const Color(0xFF2C2C2E),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? const Color(0xFFFF3B30) : Colors.transparent,
-            width: 1,
+    final accentColor = _getPriorityColor();
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: InkWell(
+        onTap: () => _onTypeChanged(type),
+        borderRadius: BorderRadius.circular(17),
+        child: Container(
+          height: 34,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: isSelected ? accentColor.withValues(alpha: 0.2) : const Color(0xFF1C1C1E),
+            borderRadius: BorderRadius.circular(17),
+            border: Border.all(
+              color: isSelected ? accentColor : Colors.transparent,
+              width: 1,
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? const Color(0xFFFF3B30) : const Color(0xFF8E8E93),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected ? const Color(0xFFFF3B30) : Colors.white,
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected ? accentColor : const Color(0xFF8E8E93),
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: isSelected ? Colors.white : const Color(0xFF8E8E93),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -502,7 +518,7 @@ class _AddReminderDialogState extends State<AddReminderDialog> {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: const Color(0xFF1C1C1E),
+              color: const Color(0xFF2C2C2E), // bg-surface
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -536,7 +552,7 @@ class _AddReminderDialogState extends State<AddReminderDialog> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF2C2C2E) : Colors.transparent,
+              color: isSelected ? const Color(0xFF1C1C1E) : Colors.transparent,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Row(

@@ -17,8 +17,10 @@ class HomeScreen extends ConsumerWidget {
 
   // --- PRESELECTION FOR BENTO ---
   void _openAddReminder(BuildContext context, WidgetRef ref, {ReminderType? type}) async {
-    final result = await showDialog<Reminder>(
+    final result = await showModalBottomSheet<Reminder>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => AddReminderDialog(initialType: type),
     );
 
@@ -328,21 +330,14 @@ class HomeScreen extends ConsumerWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(9999),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           width: 220,
           height: 64,
           decoration: BoxDecoration(
-            color: const Color(0xFF2C2C2E).withValues(alpha: 0.8), // ios-card/80
+            color: const Color(0x991C1C1E), // Frosted glass dark translucency
             borderRadius: BorderRadius.circular(9999),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 0.5),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -379,7 +374,7 @@ class HomeScreen extends ConsumerWidget {
         children: [
           Icon(
             icon,
-            color: isActive ? Colors.white : const Color(0xFF8E8E93),
+            color: isActive ? const Color(0xFFFFD60A) : const Color(0x80FFFFFF),
             size: 24,
           ),
           const SizedBox(height: 4),
@@ -387,8 +382,8 @@ class HomeScreen extends ConsumerWidget {
             label,
             style: TextStyle(
               fontSize: 10,
-              fontWeight: FontWeight.w400,
-              color: isActive ? Colors.white : const Color(0xFF8E8E93),
+              fontWeight: FontWeight.w500,
+              color: isActive ? const Color(0xFFFFD60A) : const Color(0x80FFFFFF),
             ),
           ),
         ],
@@ -400,21 +395,14 @@ class HomeScreen extends ConsumerWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(9999),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           width: 64,
           height: 64,
           decoration: BoxDecoration(
-            color: const Color(0xFF2C2C2E).withValues(alpha: 0.8),
+            color: const Color(0x991C1C1E), // Frosted glass dark translucency
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 0.5),
           ),
           child: InkWell(
             onTap: () => _openAddReminder(context, ref),
@@ -422,7 +410,7 @@ class HomeScreen extends ConsumerWidget {
             child: const Center(
               child: Icon(
                 Icons.add,
-                color: Colors.white,
+                color: Color(0xFFFFD60A), // Notes Yellow Accent
                 size: 28,
               ),
             ),
@@ -433,6 +421,39 @@ class HomeScreen extends ConsumerWidget {
   }
 
   // --- SECTIONS ---
+  Widget _buildDismissibleRow({
+    required BuildContext context,
+    required WidgetRef ref,
+    required Reminder r,
+    required Widget child,
+  }) {
+    return Dismissible(
+      key: Key(r.id),
+      background: Container(
+        color: const Color(0xFF30D158), // accent-completed (iOS green)
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 20.0),
+        child: const Icon(Icons.check, color: Colors.white, size: 22),
+      ),
+      secondaryBackground: Container(
+        color: const Color(0xFFFF3B30), // accent-critical (iOS red)
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20.0),
+        child: const Icon(Icons.delete, color: Colors.white, size: 22),
+      ),
+      onDismissed: (direction) {
+        if (direction == DismissDirection.startToEnd) {
+          ref.read(reminderListProvider.notifier).updateReminder(
+                r.copyWith(isCompleted: !r.isCompleted),
+              );
+        } else {
+          ref.read(reminderListProvider.notifier).deleteReminder(r.id);
+        }
+      },
+      child: child,
+    );
+  }
+
   Widget _buildCriticalSection(WidgetRef ref, List<Reminder> items) {
     if (items.isEmpty) return const SizedBox.shrink();
     return Column(
@@ -442,16 +463,21 @@ class HomeScreen extends ConsumerWidget {
         _buildRoundedContainer(
           children: List.generate(items.length, (idx) {
             final r = items[idx];
-            return ReminderCard(
-              title: r.title,
-              subtitle: _getSubtitle(r),
-              leftBorderColor: const Color(0xFFFF3B30), // ios-red
-              showBottomDivider: idx < items.length - 1,
-              onTap: () {
-                ref.read(reminderListProvider.notifier).updateReminder(
-                      r.copyWith(isCompleted: !r.isCompleted),
-                    );
-              },
+            return _buildDismissibleRow(
+              context: ref.context,
+              ref: ref,
+              r: r,
+              child: ReminderCard(
+                title: r.title,
+                subtitle: _getSubtitle(r),
+                leftBorderColor: const Color(0xFFFF3B30), // ios-red
+                showBottomDivider: idx < items.length - 1,
+                onTap: () {
+                  ref.read(reminderListProvider.notifier).updateReminder(
+                        r.copyWith(isCompleted: !r.isCompleted),
+                      );
+                },
+              ),
             );
           }),
         ),
@@ -474,17 +500,22 @@ class HomeScreen extends ConsumerWidget {
             } else if (r.priority == PriorityLevel.critical) {
               dotColor = const Color(0xFFFF3B30);
             }
-            return ReminderCard(
-              title: r.title,
-              subtitle: r.description ?? _getSubtitle(r),
-              icon: _getTypeIcon(r.type),
-              leadingDotColor: dotColor,
-              showBottomDivider: idx < items.length - 1,
-              onTap: () {
-                ref.read(reminderListProvider.notifier).updateReminder(
-                      r.copyWith(isCompleted: !r.isCompleted),
-                    );
-              },
+            return _buildDismissibleRow(
+              context: ref.context,
+              ref: ref,
+              r: r,
+              child: ReminderCard(
+                title: r.title,
+                subtitle: r.description ?? _getSubtitle(r),
+                icon: _getTypeIcon(r.type),
+                leadingDotColor: dotColor,
+                showBottomDivider: idx < items.length - 1,
+                onTap: () {
+                  ref.read(reminderListProvider.notifier).updateReminder(
+                        r.copyWith(isCompleted: !r.isCompleted),
+                      );
+                },
+              ),
             );
           }),
         ),
@@ -504,18 +535,23 @@ class HomeScreen extends ConsumerWidget {
             children: List.generate(items.length, (idx) {
               final r = items[idx];
               final dateLabel = '${r.scheduledAt.month}/${r.scheduledAt.day}';
-              return ReminderCard(
-                title: r.title,
-                trailing: Text(
-                  dateLabel,
-                  style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 12),
+              return _buildDismissibleRow(
+                context: ref.context,
+                ref: ref,
+                r: r,
+                child: ReminderCard(
+                  title: r.title,
+                  trailing: Text(
+                    dateLabel,
+                    style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 12),
+                  ),
+                  showBottomDivider: idx < items.length - 1,
+                  onTap: () {
+                    ref.read(reminderListProvider.notifier).updateReminder(
+                          r.copyWith(isCompleted: !r.isCompleted),
+                        );
+                  },
                 ),
-                showBottomDivider: idx < items.length - 1,
-                onTap: () {
-                  ref.read(reminderListProvider.notifier).updateReminder(
-                        r.copyWith(isCompleted: !r.isCompleted),
-                      );
-                },
               );
             }),
           ),
@@ -523,8 +559,6 @@ class HomeScreen extends ConsumerWidget {
       ],
     );
   }
-
-
 
   void _handleCompletedTap(BuildContext context, WidgetRef ref, Reminder r) {
     showCupertinoModalPopup(
@@ -579,11 +613,16 @@ class HomeScreen extends ConsumerWidget {
           child: _buildRoundedContainer(
             children: List.generate(items.length, (idx) {
               final r = items[idx];
-              return ReminderCard(
-                title: r.title,
-                isCompleted: true,
-                showBottomDivider: idx < items.length - 1,
-                onTap: () => _handleCompletedTap(context, ref, r),
+              return _buildDismissibleRow(
+                context: context,
+                ref: ref,
+                r: r,
+                child: ReminderCard(
+                  title: r.title,
+                  isCompleted: true,
+                  showBottomDivider: idx < items.length - 1,
+                  onTap: () => _handleCompletedTap(context, ref, r),
+                ),
               );
             }),
           ),
