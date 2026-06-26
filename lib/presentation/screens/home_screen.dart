@@ -2,11 +2,13 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/reminder_provider.dart';
+import '../../providers/navigation_provider.dart';
 import '../../data/models/reminder.dart';
 import '../widgets/section_header.dart';
 import '../widgets/reminder_card.dart';
 import '../widgets/quick_add_bento.dart';
 import '../widgets/add_reminder_dialog.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -72,6 +74,7 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final allReminders = ref.watch(reminderListProvider);
+    final activeTab = ref.watch(navigationProvider);
 
     // Partition reminders
     final critical = allReminders.where((r) => r.priority == PriorityLevel.critical && !r.isCompleted).toList();
@@ -85,8 +88,8 @@ class HomeScreen extends ConsumerWidget {
         builder: (context, constraints) {
           final isDesktop = constraints.maxWidth >= 768;
           return isDesktop 
-              ? _buildDesktopLayout(context, ref, critical, today, upcoming, completed) 
-              : _buildMobileLayout(context, ref, critical, today, upcoming, completed);
+              ? _buildDesktopLayout(context, ref, activeTab, critical, today, upcoming, completed) 
+              : _buildMobileLayout(context, ref, activeTab, critical, today, upcoming, completed);
         },
       ),
     );
@@ -96,6 +99,7 @@ class HomeScreen extends ConsumerWidget {
   Widget _buildDesktopLayout(
     BuildContext context,
     WidgetRef ref,
+    int activeTab,
     List<Reminder> critical,
     List<Reminder> today,
     List<Reminder> upcoming,
@@ -111,9 +115,9 @@ class HomeScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text(
-                  'Prio',
-                  style: TextStyle(
+                Text(
+                  activeTab == 0 ? 'Prio' : 'Settings',
+                  style: const TextStyle(
                     fontSize: 34,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -122,12 +126,14 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 Row(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.search, color: Colors.white),
-                      onPressed: () {},
-                      splashRadius: 22,
-                    ),
-                    const SizedBox(width: 8),
+                    if (activeTab == 0) ...[
+                      IconButton(
+                        icon: const Icon(Icons.search, color: Colors.white),
+                        onPressed: () {},
+                        splashRadius: 22,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     Container(
                       width: 40,
                       height: 40,
@@ -157,40 +163,45 @@ class HomeScreen extends ConsumerWidget {
                   // Left Content
                   Expanded(
                     flex: 2,
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildCriticalSection(ref, critical),
-                          const SizedBox(height: 24),
-                          _buildTodaySection(ref, today),
-                          const SizedBox(height: 24),
-                          _buildUpcomingSection(ref, upcoming),
-                          const SizedBox(height: 24),
-                          _buildLaterSection(),
-                          const SizedBox(height: 24),
-                          _buildCompletedSection(ref, completed),
-                          const SizedBox(height: 40),
-                        ],
-                      ),
-                    ),
+                    child: activeTab == 0
+                        ? SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildCriticalSection(ref, critical),
+                                const SizedBox(height: 24),
+                                _buildTodaySection(ref, today),
+                                const SizedBox(height: 24),
+                                _buildUpcomingSection(ref, upcoming),
+                                const SizedBox(height: 24),
+                                _buildLaterSection(),
+                                const SizedBox(height: 24),
+                                _buildCompletedSection(ref, completed),
+                                const SizedBox(height: 40),
+                              ],
+                            ),
+                          )
+                        : const SettingsScreen(),
                   ),
                   const SizedBox(width: 32),
-                  // Sidebar
-                  SizedBox(
-                    width: 320,
-                    child: QuickAddBento(
-                      onCategoryTap: (category) {
-                        ReminderType? type;
-                        if (category == 'Groceries') type = ReminderType.custom;
-                        if (category == 'Work') type = ReminderType.deadline;
-                        if (category == 'Health') type = ReminderType.medication;
-                        if (category == 'Custom') type = ReminderType.custom;
-                        _openAddReminder(context, ref, type: type);
-                      },
-                    ),
-                  ),
+                  // Sidebar (Keep on desktop for quick actions, or only show if activeTab == 0)
+                  if (activeTab == 0)
+                    SizedBox(
+                      width: 320,
+                      child: QuickAddBento(
+                        onCategoryTap: (category) {
+                          ReminderType? type;
+                          if (category == 'Groceries') type = ReminderType.custom;
+                          if (category == 'Work') type = ReminderType.deadline;
+                          if (category == 'Health') type = ReminderType.medication;
+                          if (category == 'Custom') type = ReminderType.custom;
+                          _openAddReminder(context, ref, type: type);
+                        },
+                      ),
+                    )
+                  else
+                    const SizedBox(width: 320), // Placeholder to maintain centered layout grid alignment
                 ],
               ),
             ),
@@ -204,6 +215,7 @@ class HomeScreen extends ConsumerWidget {
   Widget _buildMobileLayout(
     BuildContext context,
     WidgetRef ref,
+    int activeTab,
     List<Reminder> critical,
     List<Reminder> today,
     List<Reminder> upcoming,
@@ -215,77 +227,94 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             children: [
               // Mobile Header
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    if (activeTab == 1) ...[
+                      IconButton(
+                        icon: const Icon(Icons.menu, color: Colors.white),
+                        onPressed: () {},
+                      ),
+                    ],
                     Text(
-                      'Prio',
-                      style: TextStyle(
+                      activeTab == 0 ? 'Prio' : 'Settings',
+                      style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                         letterSpacing: 0.36,
                       ),
                     ),
+                    if (activeTab == 1) ...[
+                      IconButton(
+                        icon: const Icon(Icons.add, color: Colors.white),
+                        onPressed: () => _openAddReminder(context, ref),
+                      ),
+                    ] else ...[
+                      const SizedBox(width: 48), // Spacer to balance layout header
+                    ],
                   ],
                 ),
               ),
 
-              // Search Bar (Mobile only)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Container(
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2C2C2E), // ios-card
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Row(
-                    children: [
-                      SizedBox(width: 12),
-                      Icon(Icons.search, color: Color(0xFF8E8E93)),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          style: TextStyle(color: Colors.white, fontSize: 17),
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            hintText: 'Search reminders',
-                            hintStyle: TextStyle(
-                              color: Color(0xFF8E8E93),
-                              fontSize: 17,
+              // Search Bar (Mobile only, only show on Reminders tab)
+              if (activeTab == 0)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2C2C2E), // ios-card
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      children: [
+                        SizedBox(width: 12),
+                        Icon(Icons.search, color: Color(0xFF8E8E93)),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            style: TextStyle(color: Colors.white, fontSize: 17),
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              hintText: 'Search reminders',
+                              hintStyle: TextStyle(
+                                color: Color(0xFF8E8E93),
+                                fontSize: 17,
+                              ),
+                              isDense: true,
                             ),
-                            isDense: true,
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
               // Scrollable content
               Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 100.0), // Safe area for floating bottom nav/FAB
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 16),
-                      _buildCriticalSection(ref, critical),
-                      const SizedBox(height: 24),
-                      _buildTodaySection(ref, today),
-                      const SizedBox(height: 24),
-                      _buildUpcomingSection(ref, upcoming),
-                      const SizedBox(height: 24),
-                      _buildLaterSection(),
-                      const SizedBox(height: 24),
-                      _buildCompletedSection(ref, completed),
-                    ],
-                  ),
-                ),
+                child: activeTab == 0
+                    ? SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.only(bottom: 100.0), // Safe area for floating bottom nav/FAB
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 16),
+                            _buildCriticalSection(ref, critical),
+                            const SizedBox(height: 24),
+                            _buildTodaySection(ref, today),
+                            const SizedBox(height: 24),
+                            _buildUpcomingSection(ref, upcoming),
+                            const SizedBox(height: 24),
+                            _buildLaterSection(),
+                            const SizedBox(height: 24),
+                            _buildCompletedSection(ref, completed),
+                          ],
+                        ),
+                      )
+                    : const SettingsScreen(),
               ),
             ],
           ),
@@ -295,19 +324,20 @@ class HomeScreen extends ConsumerWidget {
         Positioned(
           left: 16,
           bottom: 24,
-          child: _buildFloatingBottomNav(),
+          child: _buildFloatingBottomNav(ref, activeTab),
         ),
-        Positioned(
-          right: 16,
-          bottom: 24,
-          child: _buildFloatingActionButton(context, ref),
-        ),
+        if (activeTab == 0) // Only show FAB on reminders tab since Settings has header '+' button
+          Positioned(
+            right: 16,
+            bottom: 24,
+            child: _buildFloatingActionButton(context, ref),
+          ),
       ],
     );
   }
 
   // --- FLOATING UI CONTROLS ---
-  Widget _buildFloatingBottomNav() {
+  Widget _buildFloatingBottomNav(WidgetRef ref, int activeTab) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(9999),
       child: BackdropFilter(
@@ -333,12 +363,14 @@ class HomeScreen extends ConsumerWidget {
               _buildNavButton(
                 icon: Icons.notifications,
                 label: 'Reminders',
-                isActive: true,
+                isActive: activeTab == 0,
+                onTap: () => ref.read(navigationProvider.notifier).state = 0,
               ),
               _buildNavButton(
                 icon: Icons.settings,
                 label: 'Settings',
-                isActive: false,
+                isActive: activeTab == 1,
+                onTap: () => ref.read(navigationProvider.notifier).state = 1,
               ),
             ],
           ),
@@ -351,9 +383,10 @@ class HomeScreen extends ConsumerWidget {
     required IconData icon,
     required String label,
     required bool isActive,
+    required VoidCallback onTap,
   }) {
     return InkWell(
-      onTap: () {},
+      onTap: onTap,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
