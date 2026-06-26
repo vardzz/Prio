@@ -233,7 +233,7 @@ class HomeScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text(
-                      activeTab == 0 ? 'Prio' : 'Settings',
+                      activeTab == 0 ? 'prio' : 'Settings',
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
