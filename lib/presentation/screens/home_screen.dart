@@ -347,13 +347,11 @@ class HomeScreen extends ConsumerWidget {
             children: [
               _buildNavButton(
                 icon: Icons.notifications,
-                label: 'Reminders',
                 isActive: activeTab == 0,
                 onTap: () => ref.read(navigationProvider.notifier).state = 0,
               ),
               _buildNavButton(
                 icon: Icons.settings,
-                label: 'Settings',
                 isActive: activeTab == 1,
                 onTap: () => ref.read(navigationProvider.notifier).state = 1,
               ),
@@ -366,7 +364,6 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildNavButton({
     required IconData icon,
-    required String label,
     required bool isActive,
     required VoidCallback onTap,
   }) {
@@ -379,15 +376,6 @@ class HomeScreen extends ConsumerWidget {
             icon,
             color: isActive ? const Color(0xFFFFD60A) : const Color(0x80FFFFFF),
             size: 24,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: isActive ? const Color(0xFFFFD60A) : const Color(0x80FFFFFF),
-            ),
           ),
         ],
       ),
