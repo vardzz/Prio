@@ -1,27 +1,106 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/reminder_provider.dart';
+import '../../data/models/reminder.dart';
 import '../widgets/section_header.dart';
 import '../widgets/reminder_card.dart';
 import '../widgets/quick_add_bento.dart';
+import '../widgets/add_reminder_dialog.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
+  // --- PRESELECTION FOR BENTO ---
+  void _openAddReminder(BuildContext context, WidgetRef ref, {ReminderType? type}) async {
+    final result = await showDialog<Reminder>(
+      context: context,
+      builder: (context) => AddReminderDialog(initialType: type),
+    );
+
+    if (result != null) {
+      ref.read(reminderListProvider.notifier).addReminder(result);
+    }
+  }
+
+  bool _isToday(DateTime dt) {
+    final now = DateTime.now();
+    return dt.year == now.year && dt.month == now.month && dt.day == now.day;
+  }
+
+  bool _isUpcoming(DateTime dt) {
+    final now = DateTime.now();
+    final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    return dt.isAfter(todayEnd);
+  }
+
+  String _getSubtitle(Reminder r) {
+    final now = DateTime.now();
+    final diff = r.scheduledAt.difference(now);
+    String timeStr = '';
+    
+    if (diff.inMinutes > 0 && diff.inHours < 12) {
+      if (diff.inHours > 0) {
+        timeStr = 'In ${diff.inHours} hour${diff.inHours > 1 ? 's' : ''}';
+      } else {
+        timeStr = 'In ${diff.inMinutes} minute${diff.inMinutes > 1 ? 's' : ''}';
+      }
+    } else {
+      final hour = r.scheduledAt.hour > 12 ? r.scheduledAt.hour - 12 : (r.scheduledAt.hour == 0 ? 12 : r.scheduledAt.hour);
+      final ampm = r.scheduledAt.hour >= 12 ? 'PM' : 'AM';
+      final min = r.scheduledAt.minute.toString().padLeft(2, '0');
+      timeStr = 'Due at $hour:$min $ampm';
+    }
+
+    final typeName = r.type.name[0].toUpperCase() + r.type.name.substring(1);
+    return '$timeStr · $typeName';
+  }
+
+  IconData _getTypeIcon(ReminderType type) {
+    switch (type) {
+      case ReminderType.medication:
+        return Icons.medical_services_outlined;
+      case ReminderType.deadline:
+        return Icons.push_pin_outlined;
+      case ReminderType.bill:
+        return Icons.credit_card;
+      case ReminderType.custom:
+        return Icons.circle;
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final allReminders = ref.watch(reminderListProvider);
+
+    // Partition reminders
+    final critical = allReminders.where((r) => r.priority == PriorityLevel.critical && !r.isCompleted).toList();
+    final today = allReminders.where((r) => r.priority != PriorityLevel.critical && !r.isCompleted && _isToday(r.scheduledAt)).toList();
+    final upcoming = allReminders.where((r) => r.priority != PriorityLevel.critical && !r.isCompleted && _isUpcoming(r.scheduledAt)).toList();
+    final completed = allReminders.where((r) => r.isCompleted).toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFF1C1C1E), // ios-bg
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isDesktop = constraints.maxWidth >= 768;
-          return isDesktop ? _buildDesktopLayout(context) : _buildMobileLayout(context);
+          return isDesktop 
+              ? _buildDesktopLayout(context, ref, critical, today, upcoming, completed) 
+              : _buildMobileLayout(context, ref, critical, today, upcoming, completed);
         },
       ),
     );
   }
 
   // --- DESKTOP LAYOUT ---
-  Widget _buildDesktopLayout(BuildContext context) {
+  Widget _buildDesktopLayout(
+    BuildContext context,
+    WidgetRef ref,
+    List<Reminder> critical,
+    List<Reminder> today,
+    List<Reminder> upcoming,
+    List<Reminder> completed,
+  ) {
     return SafeArea(
       child: Column(
         children: [
@@ -58,7 +137,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.add, color: Colors.white),
-                        onPressed: () {},
+                        onPressed: () => _openAddReminder(context, ref),
                         splashRadius: 20,
                       ),
                     ),
@@ -83,15 +162,15 @@ class HomeScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildCriticalSection(),
+                          _buildCriticalSection(ref, critical),
                           const SizedBox(height: 24),
-                          _buildTodaySection(),
+                          _buildTodaySection(ref, today),
                           const SizedBox(height: 24),
-                          _buildUpcomingSection(),
+                          _buildUpcomingSection(ref, upcoming),
                           const SizedBox(height: 24),
                           _buildLaterSection(),
                           const SizedBox(height: 24),
-                          _buildCompletedSection(),
+                          _buildCompletedSection(ref, completed),
                           const SizedBox(height: 40),
                         ],
                       ),
@@ -99,9 +178,18 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 32),
                   // Sidebar
-                  const SizedBox(
+                  SizedBox(
                     width: 320,
-                    child: QuickAddBento(),
+                    child: QuickAddBento(
+                      onCategoryTap: (category) {
+                        ReminderType? type;
+                        if (category == 'Groceries') type = ReminderType.custom;
+                        if (category == 'Work') type = ReminderType.deadline;
+                        if (category == 'Health') type = ReminderType.medication;
+                        if (category == 'Custom') type = ReminderType.custom;
+                        _openAddReminder(context, ref, type: type);
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -113,19 +201,26 @@ class HomeScreen extends StatelessWidget {
   }
 
   // --- MOBILE LAYOUT ---
-  Widget _buildMobileLayout(BuildContext context) {
+  Widget _buildMobileLayout(
+    BuildContext context,
+    WidgetRef ref,
+    List<Reminder> critical,
+    List<Reminder> today,
+    List<Reminder> upcoming,
+    List<Reminder> completed,
+  ) {
     return Stack(
       children: [
         SafeArea(
           child: Column(
             children: [
               // Mobile Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Prio',
                       style: TextStyle(
                         fontSize: 28,
@@ -179,15 +274,15 @@ class HomeScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       const SizedBox(height: 16),
-                      _buildCriticalSection(),
+                      _buildCriticalSection(ref, critical),
                       const SizedBox(height: 24),
-                      _buildTodaySection(),
+                      _buildTodaySection(ref, today),
                       const SizedBox(height: 24),
-                      _buildUpcomingSection(),
+                      _buildUpcomingSection(ref, upcoming),
                       const SizedBox(height: 24),
                       _buildLaterSection(),
                       const SizedBox(height: 24),
-                      _buildCompletedSection(),
+                      _buildCompletedSection(ref, completed),
                     ],
                   ),
                 ),
@@ -205,7 +300,7 @@ class HomeScreen extends StatelessWidget {
         Positioned(
           right: 16,
           bottom: 24,
-          child: _buildFloatingActionButton(),
+          child: _buildFloatingActionButton(context, ref),
         ),
       ],
     );
@@ -221,12 +316,12 @@ class HomeScreen extends StatelessWidget {
           width: 220,
           height: 64,
           decoration: BoxDecoration(
-            color: const Color(0xFF2C2C2E).withOpacity(0.8), // ios-card/80
+            color: const Color(0xFF2C2C2E).withValues(alpha: 0.8), // ios-card/80
             borderRadius: BorderRadius.circular(9999),
-            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -281,7 +376,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFloatingActionButton() {
+  Widget _buildFloatingActionButton(BuildContext context, WidgetRef ref) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(9999),
       child: BackdropFilter(
@@ -290,19 +385,19 @@ class HomeScreen extends StatelessWidget {
           width: 64,
           height: 64,
           decoration: BoxDecoration(
-            color: const Color(0xFF2C2C2E).withOpacity(0.8),
+            color: const Color(0xFF2C2C2E).withValues(alpha: 0.8),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
           child: InkWell(
-            onTap: () {},
+            onTap: () => _openAddReminder(context, ref),
             customBorder: const CircleBorder(),
             child: const Center(
               child: Icon(
@@ -318,70 +413,67 @@ class HomeScreen extends StatelessWidget {
   }
 
   // --- SECTIONS ---
-  Widget _buildCriticalSection() {
+  Widget _buildCriticalSection(WidgetRef ref, List<Reminder> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SectionHeader(title: 'Critical'),
         _buildRoundedContainer(
-          children: const [
-            ReminderCard(
-              title: 'Take Heart Medication',
-              subtitle: 'In 2 hours · Medication',
-              leftBorderColor: Color(0xFFFF3B30), // ios-red
-              showBottomDivider: true,
-            ),
-            ReminderCard(
-              title: 'Finalize Quarterly Report',
-              subtitle: 'Due at 5:00 PM · Work',
-              leftBorderColor: Color(0xFFFF3B30),
-              showBottomDivider: true,
-            ),
-            ReminderCard(
-              title: 'Pick up kids from school',
-              subtitle: 'Due at 3:15 PM · Personal',
-              leftBorderColor: Color(0xFFFF3B30),
-              showBottomDivider: false,
-            ),
-          ],
+          children: List.generate(items.length, (idx) {
+            final r = items[idx];
+            return ReminderCard(
+              title: r.title,
+              subtitle: _getSubtitle(r),
+              leftBorderColor: const Color(0xFFFF3B30), // ios-red
+              showBottomDivider: idx < items.length - 1,
+              onTap: () {
+                ref.read(reminderListProvider.notifier).updateReminder(
+                      r.copyWith(isCompleted: !r.isCompleted),
+                    );
+              },
+            );
+          }),
         ),
       ],
     );
   }
 
-  Widget _buildTodaySection() {
+  Widget _buildTodaySection(WidgetRef ref, List<Reminder> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SectionHeader(title: 'Today'),
         _buildRoundedContainer(
-          children: const [
-            ReminderCard(
-              title: 'Vitamin D Supplement',
-              subtitle: '8:00 AM',
-              icon: Icons.medical_services_outlined,
-              leadingDotColor: Color(0xFFFF9F0A), // ios-orange
-              showBottomDivider: true,
-            ),
-            ReminderCard(
-              title: 'Call Mom',
-              subtitle: '12:30 PM',
-              icon: Icons.push_pin_outlined,
-              showBottomDivider: true,
-            ),
-            ReminderCard(
-              title: 'Pay Internet Bill',
-              subtitle: 'Anytime',
-              icon: Icons.credit_card,
-              showBottomDivider: false,
-            ),
-          ],
+          children: List.generate(items.length, (idx) {
+            final r = items[idx];
+            Color? dotColor;
+            if (r.priority == PriorityLevel.high) {
+              dotColor = const Color(0xFFFF9F0A);
+            } else if (r.priority == PriorityLevel.critical) {
+              dotColor = const Color(0xFFFF3B30);
+            }
+            return ReminderCard(
+              title: r.title,
+              subtitle: r.description ?? _getSubtitle(r),
+              icon: _getTypeIcon(r.type),
+              leadingDotColor: dotColor,
+              showBottomDivider: idx < items.length - 1,
+              onTap: () {
+                ref.read(reminderListProvider.notifier).updateReminder(
+                      r.copyWith(isCompleted: !r.isCompleted),
+                    );
+              },
+            );
+          }),
         ),
       ],
     );
   }
 
-  Widget _buildUpcomingSection() {
+  Widget _buildUpcomingSection(WidgetRef ref, List<Reminder> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -389,24 +481,23 @@ class HomeScreen extends StatelessWidget {
         Opacity(
           opacity: 0.9,
           child: _buildRoundedContainer(
-            children: const [
-              ReminderCard(
-                title: 'Dentist Appointment',
+            children: List.generate(items.length, (idx) {
+              final r = items[idx];
+              final dateLabel = '${r.scheduledAt.month}/${r.scheduledAt.day}';
+              return ReminderCard(
+                title: r.title,
                 trailing: Text(
-                  'Tomorrow',
-                  style: TextStyle(color: Color(0xFF8E8E93), fontSize: 12),
+                  dateLabel,
+                  style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 12),
                 ),
-                showBottomDivider: true,
-              ),
-              ReminderCard(
-                title: 'Car Maintenance',
-                trailing: Text(
-                  'Friday',
-                  style: TextStyle(color: Color(0xFF8E8E93), fontSize: 12),
-                ),
-                showBottomDivider: false,
-              ),
-            ],
+                showBottomDivider: idx < items.length - 1,
+                onTap: () {
+                  ref.read(reminderListProvider.notifier).updateReminder(
+                        r.copyWith(isCompleted: !r.isCompleted),
+                      );
+                },
+              );
+            }),
           ),
         ),
       ],
@@ -428,7 +519,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCompletedSection() {
+  Widget _buildCompletedSection(WidgetRef ref, List<Reminder> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -436,13 +528,19 @@ class HomeScreen extends StatelessWidget {
         Opacity(
           opacity: 0.6,
           child: _buildRoundedContainer(
-            children: const [
-              ReminderCard(
-                title: 'Buy Groceries',
+            children: List.generate(items.length, (idx) {
+              final r = items[idx];
+              return ReminderCard(
+                title: r.title,
                 isCompleted: true,
-                showBottomDivider: false,
-              ),
-            ],
+                showBottomDivider: idx < items.length - 1,
+                onTap: () {
+                  ref.read(reminderListProvider.notifier).updateReminder(
+                        r.copyWith(isCompleted: !r.isCompleted),
+                      );
+                },
+              );
+            }),
           ),
         ),
       ],
