@@ -118,7 +118,7 @@ class HomeScreen extends ConsumerWidget {
                 Text(
                   activeTab == 0 ? 'prio' : 'settings',
                   style: const TextStyle(
-                    fontFamily: 'Satoshi',
+                    fontFamily: 'Anton',
                     fontSize: 34,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -236,7 +236,7 @@ class HomeScreen extends ConsumerWidget {
                     Text(
                       activeTab == 0 ? 'prio' : 'settings',
                       style: const TextStyle(
-                        fontFamily: 'Satoshi',
+                        fontFamily: 'Anton',
                         fontSize: 28,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
