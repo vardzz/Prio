@@ -11,6 +11,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _snoozeLimit = 3;
   bool _hapticFeedback = true;
   bool _notificationsPermission = false; // Mocked permission state
+  bool _criticalAlertsOverride = true;
 
   void _incrementSnooze() {
     if (_snoozeLimit < 10) {
@@ -49,6 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _snoozeLimit = 3;
                 _hapticFeedback = true;
                 _notificationsPermission = false;
+                _criticalAlertsOverride = true;
               });
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
@@ -78,49 +80,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildCard([
             // Notifications status
             _buildSettingRow(
-              icon: Icons.notifications_off_outlined,
-              iconColor: const Color(0xFFFF3B30), // ios-red
+              icon: _notificationsPermission ? Icons.notifications_active_outlined : Icons.notifications_off_outlined,
+              iconColor: _notificationsPermission ? const Color(0xFF4CD964) : const Color(0xFFFF3B30),
               title: 'Notifications',
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _notificationsPermission ? 'On' : 'Off',
-                    style: TextStyle(
-                      color: _notificationsPermission ? const Color(0xFF4CD964) : const Color(0xFFFF3B30),
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _notificationsPermission = !_notificationsPermission;
-                      });
-                    },
-                    child: const Text(
-                      'Fix ➔',
-                      style: TextStyle(
-                        color: Color(0xFF007AFF), // iOS blue link
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
+              trailing: Switch(
+                value: _notificationsPermission,
+                onChanged: (val) {
+                  setState(() {
+                    _notificationsPermission = val;
+                  });
+                },
+                activeThumbColor: const Color(0xFF4CD964),
+                activeTrackColor: const Color(0xFF4CD964).withValues(alpha: 0.3),
+                inactiveThumbColor: Colors.white,
+                inactiveTrackColor: const Color(0xFF48484A),
               ),
               showDivider: true,
             ),
             // Critical Alerts Override
             _buildSettingRow(
-              icon: Icons.notifications_active_outlined,
-              iconColor: const Color(0xFF4CD964), // iOS green
+              icon: _criticalAlertsOverride ? Icons.notifications_active_outlined : Icons.notifications_off_outlined,
+              iconColor: _criticalAlertsOverride ? const Color(0xFF4CD964) : const Color(0xFF8E8E93),
               title: 'Critical Alerts Override',
-              trailing: const Icon(
-                Icons.check_circle,
-                color: Color(0xFF4CD964),
-                size: 22,
+              trailing: Switch(
+                value: _criticalAlertsOverride,
+                onChanged: (val) {
+                  setState(() {
+                    _criticalAlertsOverride = val;
+                  });
+                },
+                activeThumbColor: const Color(0xFF4CD964),
+                activeTrackColor: const Color(0xFF4CD964).withValues(alpha: 0.3),
+                inactiveThumbColor: Colors.white,
+                inactiveTrackColor: const Color(0xFF48484A),
               ),
               showDivider: false,
             ),
