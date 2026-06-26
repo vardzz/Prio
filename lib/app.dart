@@ -1,18 +1,65 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'services/notification_service.dart';
 import 'presentation/screens/home_screen.dart';
+import 'presentation/screens/alarm_ring_screen.dart';
+import 'providers/active_alarm_provider.dart';
+import 'providers/reminder_provider.dart';
 
-class PrioApp extends StatelessWidget {
+class PrioApp extends ConsumerStatefulWidget {
   const PrioApp({super.key});
 
   @override
+  ConsumerState<PrioApp> createState() => _PrioAppState();
+}
+
+class _PrioAppState extends ConsumerState<PrioApp> {
+  Timer? _alarmTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Check for due reminders every 5 seconds
+    _alarmTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _checkAlarms();
+    });
+  }
+
+  @override
+  void dispose() {
+    _alarmTimer?.cancel();
+    super.dispose();
+  }
+
+  void _checkAlarms() {
+    final activeAlarm = ref.read(activeAlarmProvider);
+    if (activeAlarm != null) return; // Already ringing an alarm
+
+    final reminders = ref.read(reminderListProvider);
+    final now = DateTime.now();
+
+    for (final r in reminders) {
+      if (!r.isCompleted && r.scheduledAt.isBefore(now)) {
+        // Trigger the alarm screen overlay
+        ref.read(activeAlarmProvider.notifier).state = r;
+        break; // Only trigger one alarm at a time
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final activeAlarm = ref.watch(activeAlarmProvider);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF1C1C1E), // ios-bg
       ),
-      home: const HomeScreen(),
+      home: activeAlarm != null 
+          ? AlarmRingScreen(reminder: activeAlarm) 
+          : const HomeScreen(),
     );
   }
 }
